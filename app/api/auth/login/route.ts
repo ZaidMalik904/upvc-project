@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ error: 'Account not found. Please Register First.' }, { status: 404 });
+      return NextResponse.json({ error: 'Account not found. Please Register First.' }, { status: 401 });
     }
 
     if (user.password !== password) {
