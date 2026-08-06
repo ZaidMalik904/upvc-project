@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/upvc_database';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://upvc-project:BG7A9c3etl8TNWnc@ac-pwdes3o-shard-00-00.7ixtc5d.mongodb.net:27017,ac-pwdes3o-shard-00-01.7ixtc5d.mongodb.net:27017,ac-pwdes3o-shard-00-02.7ixtc5d.mongodb.net:27017/upvc_database?ssl=true&replicaSet=atlas-kopc9x-shard-0&authSource=admin&appName=upvc-project';
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
@@ -32,7 +32,7 @@ async function connectToDatabase() {
       return mongoose;
     });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {
