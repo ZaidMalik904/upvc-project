@@ -1,23 +1,22 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import connectToDatabase from '@/lib/mongodb';
+import { User } from '@/lib/models';
 
 export async function POST(req: Request) {
   try {
+    await connectToDatabase();
     const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const users = await query<any[]>('SELECT id, name, email, password_hash FROM admins WHERE email = ?', [email]);
-    if (users.length === 0) {
+    const user = await User.findOne({ email });
+    if (!user) {
       return NextResponse.json({ error: 'Account not found. Please Register First.' }, { status: 404 });
     }
 
-    const user = users[0];
-    
-    // In a real app, compare hashes. We are comparing plain text per user requirement.
-    if (user.password_hash !== password) {
+    if (user.password !== password) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: 'Login successful',
       user: {
-        id: user.id,
+        id: user._id,
         name: user.name,
         email: user.email
       }

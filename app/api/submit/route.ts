@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // 1. Validate request
     const validatedData = submissionSchema.parse(body);
 
-    // 2. Save data into SQL
+    // 2. Save data into MongoDB
     const submissionId = await saveSubmission(validatedData);
 
     // 3. Generate PDF Buffer

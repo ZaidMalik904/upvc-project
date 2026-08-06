@@ -1,25 +1,18 @@
-import { query } from './db';
+import connectToDatabase from './mongodb';
+import { Submission } from './models';
 import { ValidatedSubmissionData } from './validation';
 
-export async function saveSubmission(data: ValidatedSubmissionData): Promise<number> {
-  // Ensure the table exists dynamically
-  await query(`
-    CREATE TABLE IF NOT EXISTS submissions (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(150) NOT NULL,
-      email VARCHAR(150) NOT NULL,
-      phone VARCHAR(50) NOT NULL,
-      company VARCHAR(150),
-      message TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  const sql = `
-    INSERT INTO submissions (name, email, phone, company, message)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  // @ts-ignore
-  const result: any = await query(sql, [data.name, data.email, data.phone, data.company || null, data.message]);
-  return result.insertId;
+export async function saveSubmission(data: ValidatedSubmissionData): Promise<string> {
+  await connectToDatabase();
+  
+  const newSubmission = new Submission({
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    company: data.company || null,
+    message: data.message || ''
+  });
+  
+  await newSubmission.save();
+  return newSubmission._id.toString();
 }

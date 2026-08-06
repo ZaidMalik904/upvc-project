@@ -8,7 +8,7 @@ import { AuthProvider } from '@/components/ui/AuthProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Apex UPVC Systems | Commercial Windows & Doors Management',
+  title: 'ADL UPVC Doors & Windows | Commercial Windows & Doors Management',
   description: 'Fabrication pricing, quotation builder, and client ERP system for UPVC manufacturers',
 };
 

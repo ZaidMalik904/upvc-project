@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import connectToDatabase from '@/lib/mongodb';
+import { Settings } from '@/lib/models';
 
 export async function GET() {
   try {
-    const settings = await query<any[]>('SELECT * FROM settings WHERE id = 1');
-    if (settings.length > 0) {
+    await connectToDatabase();
+    const settings = await Settings.findOne();
+    if (settings) {
       return NextResponse.json({
-        name: settings[0].name,
-        logoUrl: settings[0].logo_url,
-        email: settings[0].email,
-        phone: settings[0].phone,
-        address: settings[0].address,
-        gstNumber: settings[0].gst_number,
-        footerText: settings[0].footer_text,
-        signatureUrl: settings[0].signature_url,
-        currencySymbol: settings[0].currency_symbol
+        name: settings.name,
+        logoUrl: settings.logoUrl,
+        email: settings.email,
+        phone: settings.phone,
+        address: settings.address,
+        gstNumber: settings.gstNumber,
+        footerText: settings.footerText,
+        signatureUrl: settings.signatureUrl,
+        currencySymbol: settings.currencySymbol
       });
     }
     return NextResponse.json({
@@ -23,36 +25,45 @@ export async function GET() {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json({
+      name: '', logoUrl: '/logo.png', email: '', phone: '', address: '', 
+      gstNumber: '', footerText: '', signatureUrl: '', currencySymbol: '₹'
+    });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    await connectToDatabase();
     const data = await req.json();
     
-    // Check if settings row exists
-    const existing = await query<any[]>('SELECT id FROM settings WHERE id = 1');
+    // We only ever have one settings object, so just update the first one or create it.
+    const existing = await Settings.findOne();
     
-    if (existing.length > 0) {
-      await query(
-        `UPDATE settings SET name=?, logo_url=?, email=?, phone=?, address=?, gst_number=?, footer_text=?, signature_url=?, currency_symbol=? WHERE id=1`,
-        [
-          data.name || '', data.logoUrl || '', data.email || '', data.phone || '', 
-          data.address || '', data.gstNumber || '', data.footerText || '', 
-          data.signatureUrl || '', data.currencySymbol || '₹'
-        ]
-      );
+    if (existing) {
+      existing.name = data.name || '';
+      existing.logoUrl = data.logoUrl || '';
+      existing.email = data.email || '';
+      existing.phone = data.phone || '';
+      existing.address = data.address || '';
+      existing.gstNumber = data.gstNumber || '';
+      existing.footerText = data.footerText || '';
+      existing.signatureUrl = data.signatureUrl || '';
+      existing.currencySymbol = data.currencySymbol || '₹';
+      await existing.save();
     } else {
-      await query(
-        `INSERT INTO settings (id, name, logo_url, email, phone, address, gst_number, footer_text, signature_url, currency_symbol) 
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          data.name || '', data.logoUrl || '', data.email || '', data.phone || '', 
-          data.address || '', data.gstNumber || '', data.footerText || '', 
-          data.signatureUrl || '', data.currencySymbol || '₹'
-        ]
-      );
+      const newSettings = new Settings({
+        name: data.name || '',
+        logoUrl: data.logoUrl || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        gstNumber: data.gstNumber || '',
+        footerText: data.footerText || '',
+        signatureUrl: data.signatureUrl || '',
+        currencySymbol: data.currencySymbol || '₹'
+      });
+      await newSettings.save();
     }
     
     return NextResponse.json({ message: 'Settings saved' }, { status: 200 });

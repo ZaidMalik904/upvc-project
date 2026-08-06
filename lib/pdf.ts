@@ -76,117 +76,242 @@ export async function generateSubmissionPDF(data: ValidatedSubmissionData): Prom
 export async function generateProjectPDF(project: any, settings: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
       const buffers: Buffer[] = [];
 
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => {
-        const pdfData = Buffer.concat(buffers);
-        resolve(pdfData);
+        resolve(Buffer.concat(buffers));
       });
 
-      // Header
-      doc.fontSize(20).text(settings?.name || 'ADL UPVC Doors & Windows', { align: 'center' });
+      // Colors
+      const primaryColor = '#0f172a'; // slate-900
+      const accentColor = '#3b82f6'; // blue-500
+      const textColor = '#334155'; // slate-700
+      const lightGray = '#f1f5f9'; // slate-100
+      const borderGray = '#e2e8f0'; // slate-200
+
+      // ==========================================
+      // HEADER SECTION
+      // ==========================================
+      const topY = 50;
+      
+      // Company Name / Logo Area (Left)
+      doc.font('Helvetica-Bold').fontSize(24).fillColor(primaryColor);
+      doc.text(settings?.name || 'ADL UPVC Doors & Windows', 50, topY);
+      
+      doc.font('Helvetica').fontSize(10).fillColor(textColor);
+      doc.moveDown(0.2);
+      if (settings?.address) doc.text(settings.address, { width: 250 });
+      if (settings?.phone) doc.text(`Phone: ${settings.phone}`);
+      if (settings?.email) doc.text(`Email: ${settings.email}`);
+      if (settings?.gstNumber) doc.text(`GSTIN: ${settings.gstNumber}`);
+
+      // Quotation Title (Right)
+      doc.font('Helvetica-Bold').fontSize(32).fillColor(accentColor);
+      doc.text('QUOTATION', 350, topY, { align: 'right' });
+      
+      doc.font('Helvetica').fontSize(10).fillColor(textColor);
+      const refCode = String(project.id).length >= 24 ? 'PRJ-' + String(project.id).slice(-6).toUpperCase() : project.id;
+      
       doc.moveDown(0.5);
-      doc.fontSize(12).fillColor('gray').text('Official Quotation Document', { align: 'center' });
+      doc.text(`Ref Number: ${refCode}`, 350, doc.y, { align: 'right' });
+      doc.text(`Date: ${new Date(project.projectDate || Date.now()).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}`, { align: 'right' });
+      doc.text(`Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}`, { align: 'right' });
+
       doc.moveDown(2);
 
-      // Info Section
-      const startX = 50;
-      doc.fillColor('black').fontSize(10);
+      // ==========================================
+      // BILLING / CLIENT INFO SECTION
+      // ==========================================
+      const infoY = doc.y + 10;
       
-      doc.text('Client Details:', startX, doc.y, { underline: true });
-      doc.moveDown(0.5);
-      doc.text(`Name: ${project.client?.name || 'N/A'}`);
-      doc.text(`Email: ${project.client?.email || 'N/A'}`);
-      doc.text(`Phone: ${project.client?.phone || 'N/A'}`);
-      doc.text(`Address: ${project.client?.address || 'N/A'}`);
+      // Box background
+      doc.rect(50, infoY, 495, 90).fillAndStroke(lightGray, borderGray);
       
-      doc.moveUp(5);
+      // Client Details (Left)
+      doc.fillColor(primaryColor).font('Helvetica-Bold').fontSize(11);
+      doc.text('Quotation For:', 65, infoY + 15);
       
-      const rightX = 350;
-      doc.text('Project Details:', rightX, doc.y, { underline: true });
-      doc.moveDown(0.5);
-      doc.text(`Project Name: ${project.projectName}`);
-      doc.text(`Date: ${project.projectDate}`);
-      doc.text(`Quotation ID: ${project.id}`);
+      doc.fillColor(textColor).font('Helvetica').fontSize(10);
+      doc.font('Helvetica-Bold').text(project.client?.name || 'N/A', 65, infoY + 35);
+      doc.font('Helvetica');
+      if (project.client?.companyName) doc.text(project.client.companyName);
+      if (project.client?.phone) doc.text(`Phone: ${project.client.phone}`);
+      if (project.client?.email) doc.text(`Email: ${project.client.email}`);
+      if (project.client?.address) doc.text(project.client.address, { width: 200 });
 
-      doc.moveDown(3);
+      // Project Details (Right inside box)
+      doc.fillColor(primaryColor).font('Helvetica-Bold').fontSize(11);
+      doc.text('Project Info:', 300, infoY + 15);
+      
+      doc.fillColor(textColor).font('Helvetica').fontSize(10);
+      doc.text(`Name: ${project.projectName}`, 300, infoY + 35);
+      if (project.totalArea) doc.text(`Total Area: ${project.totalArea} Sq.Ft.`);
+      doc.text(`Status: ${project.status || 'Draft'}`);
 
+      // ==========================================
+      // PRODUCTS TABLE
+      // ==========================================
+      let tableY = infoY + 120;
+      
       // Table Header
-      let startY = doc.y;
-      doc.rect(startX, startY, 500, 20).fillAndStroke('#185FA4', '#185FA4');
-      doc.fillColor('white').fontSize(10).font('Helvetica-Bold');
-      doc.text('Item Type', startX + 10, startY + 5, { width: 150 });
-      doc.text('Dimensions', startX + 160, startY + 5, { width: 100 });
-      doc.text('Qty', startX + 270, startY + 5, { width: 50 });
-      doc.text('Unit Price', startX + 330, startY + 5, { width: 80, align: 'right' });
-      doc.text('Total', startX + 420, startY + 5, { width: 70, align: 'right' });
+      doc.rect(50, tableY, 495, 25).fillAndStroke(primaryColor, primaryColor);
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10);
       
-      doc.moveDown(1);
+      doc.text('DESCRIPTION', 60, tableY + 8);
+      doc.text('DIMENSIONS', 260, tableY + 8);
+      doc.text('QTY', 360, tableY + 8, { align: 'center', width: 40 });
+      doc.text('PRICE', 410, tableY + 8, { align: 'right', width: 60 });
+      doc.text('TOTAL', 480, tableY + 8, { align: 'right', width: 55 });
+
+      let currentY = tableY + 25;
+      let subtotal = 0;
 
       // Table Rows
-      doc.font('Helvetica').fillColor('black');
-      let subtotal = 0;
+      doc.font('Helvetica').fontSize(9).fillColor(textColor);
       
-      if (project.products && Array.isArray(project.products)) {
+      if (project.products && Array.isArray(project.products) && project.products.length > 0) {
         project.products.forEach((p: any, index: number) => {
-          let currentY = doc.y;
-          if (currentY > 700) {
+          // Check page break
+          if (currentY > 650) {
             doc.addPage();
-            currentY = doc.y;
+            currentY = 50;
+            // Redraw Header
+            doc.rect(50, currentY, 495, 25).fillAndStroke(primaryColor, primaryColor);
+            doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10);
+            doc.text('DESCRIPTION', 60, currentY + 8);
+            doc.text('DIMENSIONS', 260, currentY + 8);
+            doc.text('QTY', 360, currentY + 8, { align: 'center', width: 40 });
+            doc.text('PRICE', 410, currentY + 8, { align: 'right', width: 60 });
+            doc.text('TOTAL', 480, currentY + 8, { align: 'right', width: 55 });
+            currentY += 25;
+            doc.font('Helvetica').fontSize(9).fillColor(textColor);
           }
           
-          const rowTotal = (p.unitPrice || 0) * p.quantity;
+          const qty = p.quantity || 1;
+          const price = p.unitPrice || 0;
+          const rowTotal = price * qty;
           subtotal += rowTotal;
           
-          // Background alternating
-          if (index % 2 === 0) {
-            doc.rect(startX, currentY - 5, 500, 20).fill('#f9fafb');
-            doc.fillColor('black');
+          const rowHeight = 40;
+          
+          // Zebra striping
+          if (index % 2 !== 0) {
+            doc.rect(50, currentY, 495, rowHeight).fill(lightGray);
           }
           
-          doc.text(p.type || 'Window', startX + 10, currentY, { width: 150 });
-          doc.text(`${p.width} x ${p.height}`, startX + 160, currentY, { width: 100 });
-          doc.text(p.quantity?.toString() || '1', startX + 270, currentY, { width: 50 });
-          doc.text(`Rs. ${p.unitPrice || 0}`, startX + 330, currentY, { width: 80, align: 'right' });
-          doc.text(`Rs. ${rowTotal}`, startX + 420, currentY, { width: 70, align: 'right' });
+          doc.fillColor(textColor);
           
-          doc.moveDown(1);
+          // Main product type
+          doc.font('Helvetica-Bold').text((p.type || 'Window').toUpperCase(), 60, currentY + 10);
+          
+          // Extra specs below type
+          doc.font('Helvetica').fontSize(8).fillColor('#64748b');
+          let specs = [];
+          if (p.glassType) specs.push(`Glass: ${p.glassType}`);
+          if (p.frameColor) specs.push(`Color: ${p.frameColor}`);
+          if (specs.length > 0) {
+            doc.text(specs.join(' | '), 60, currentY + 22);
+          }
+          
+          doc.fontSize(9).fillColor(textColor);
+          doc.text(`${p.width} x ${p.height} mm`, 260, currentY + 15);
+          doc.text(qty.toString(), 360, currentY + 15, { align: 'center', width: 40 });
+          doc.text(`Rs. ${price.toLocaleString('en-IN')}`, 410, currentY + 15, { align: 'right', width: 60 });
+          
+          doc.font('Helvetica-Bold');
+          doc.text(`Rs. ${rowTotal.toLocaleString('en-IN')}`, 480, currentY + 15, { align: 'right', width: 55 });
+          
+          // Row bottom border
+          doc.moveTo(50, currentY + rowHeight).lineTo(545, currentY + rowHeight).stroke(borderGray);
+          
+          currentY += rowHeight;
         });
+      } else {
+        doc.text('No items specified in this quotation.', 60, currentY + 15);
+        currentY += 40;
       }
 
-      // Totals
-      doc.moveDown(1);
-      const tax = subtotal * 0.08;
-      const grandTotal = subtotal + tax;
-      
-      const summaryX = 350;
-      let summaryY = doc.y;
-      
-      doc.rect(summaryX - 10, summaryY - 5, 170, 70).fill('#f8fafc');
-      doc.fillColor('black');
-      
-      doc.text('Subtotal:', summaryX, summaryY);
-      doc.text(`Rs. ${subtotal}`, summaryX + 70, summaryY, { align: 'right', width: 80 });
-      
-      doc.text('Tax (8%):', summaryX, summaryY + 15);
-      doc.text(`Rs. ${tax.toFixed(2)}`, summaryX + 70, summaryY + 15, { align: 'right', width: 80 });
-      
-      doc.font('Helvetica-Bold');
-      doc.text('Total:', summaryX, summaryY + 35);
-      doc.text(`Rs. ${grandTotal.toFixed(2)}`, summaryX + 70, summaryY + 35, { align: 'right', width: 80 });
+      // ==========================================
+      // FINANCIAL SUMMARY
+      // ==========================================
+      // If close to bottom, move summary to next page
+      if (currentY > 600) {
+        doc.addPage();
+        currentY = 50;
+      } else {
+        currentY += 20;
+      }
 
-      // Footer
+      const summaryX = 320;
+      const taxRate = project.taxPercent || 8;
+      const discount = project.discountPercent || 0;
+      
+      const taxAmount = subtotal * (taxRate / 100);
+      const discountAmount = subtotal * (discount / 100);
+      const grandTotal = subtotal + taxAmount - discountAmount;
+
+      doc.font('Helvetica').fontSize(10);
+      
+      // Subtotal
+      doc.text('Subtotal:', summaryX, currentY);
+      doc.text(`Rs. ${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, summaryX + 100, currentY, { align: 'right', width: 115 });
+      currentY += 18;
+
+      // Tax
+      if (taxRate > 0) {
+        doc.text(`Tax (${taxRate}%):`, summaryX, currentY);
+        doc.text(`Rs. ${taxAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, summaryX + 100, currentY, { align: 'right', width: 115 });
+        currentY += 18;
+      }
+
+      // Discount
+      if (discount > 0) {
+        doc.fillColor('#ef4444'); // Red for discount
+        doc.text(`Discount (${discount}%):`, summaryX, currentY);
+        doc.text(`- Rs. ${discountAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, summaryX + 100, currentY, { align: 'right', width: 115 });
+        currentY += 18;
+        doc.fillColor(textColor); // Back to normal
+      }
+
+      // Grand Total Box
+      doc.rect(summaryX, currentY, 225, 30).fillAndStroke(primaryColor, primaryColor);
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(12);
+      doc.text('GRAND TOTAL', summaryX + 10, currentY + 9);
+      doc.text(`Rs. ${grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, summaryX + 100, currentY + 9, { align: 'right', width: 115 });
+      
+      // ==========================================
+      // TERMS & CONDITIONS
+      // ==========================================
+      doc.fillColor(textColor).font('Helvetica-Bold').fontSize(10);
+      doc.text('Terms & Conditions:', 50, currentY - 30);
+      
+      doc.font('Helvetica').fontSize(8).fillColor('#64748b');
+      const termsY = doc.y + 5;
+      doc.text('1. Quotation is valid for 30 days from the date of issue.', 50, termsY);
+      doc.text('2. 50% advance payment required to confirm the order.', 50, termsY + 12);
+      doc.text('3. Remaining 50% balance due before delivery/installation.', 50, termsY + 24);
+      doc.text('4. Delivery timeframe will be confirmed upon receipt of advance.', 50, termsY + 36);
+
+      // ==========================================
+      // FOOTER (All Pages)
+      // ==========================================
       const pages = doc.bufferedPageRange ? doc.bufferedPageRange().count : 1;
       for (let i = 0; i < pages; i++) {
         doc.switchToPage(i);
-        doc.fontSize(8).fillColor('gray').font('Helvetica').text(
-          `Generated on ${new Date().toLocaleDateString()} | Page ${i + 1} of ${pages}`,
-          50,
-          720,
-          { align: 'center' }
-        );
+        
+        // Footer line
+        doc.moveTo(50, 770).lineTo(545, 770).stroke(borderGray);
+        
+        doc.fontSize(8).fillColor('#94a3b8').font('Helvetica');
+        
+        // Left footer (Company info)
+        const footerText = settings?.footerText || 'Thank you for your business!';
+        doc.text(footerText, 50, 785);
+        
+        // Right footer (Page numbers)
+        doc.text(`Page ${i + 1} of ${pages}`, 450, 785, { align: 'right', width: 95 });
       }
 
       doc.end();

@@ -71,7 +71,7 @@ export default function ProjectDetailsPage() {
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Project Reference</span>
               <h1 className="text-xl font-black text-slate-900 dark:text-white mt-1">{project.projectName}</h1>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-mono font-bold mt-0.5">{project.id}</p>
+              <p className="text-xs text-sky-600 dark:text-sky-400 font-mono font-bold mt-0.5">{project.id.length >= 24 ? `PRJ-${project.id.slice(-6).toUpperCase()}` : project.id}</p>
             </div>
 
             <div>

@@ -96,7 +96,7 @@ export function QuotationPDFView({ project, settings, onDownloadPDF }: Quotation
             </div>
             <div className="text-left sm:text-right print:text-right">
               <p className="text-[13px] sm:text-[14px] text-slate-600">Generated: <span className="font-semibold text-slate-900">{new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
-              <p className="text-[13px] sm:text-[14px] text-slate-600 mt-1">Ref: <span className="font-semibold text-slate-900">{project.projectName || project.id}</span></p>
+              <p className="text-[13px] sm:text-[14px] text-slate-600 mt-1">Ref: <span className="font-semibold text-slate-900">{project.projectName || (project.id.length >= 24 ? `PRJ-${project.id.slice(-6).toUpperCase()}` : project.id)}</span></p>
             </div>
           </div>
 

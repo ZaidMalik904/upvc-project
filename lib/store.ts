@@ -1,7 +1,7 @@
 import { Client, Project, CompanySettings } from '@/types';
 import { INITIAL_CLIENTS, INITIAL_PROJECTS, INITIAL_COMPANY_SETTINGS } from './mockData';
 
-// We have migrated from localStorage to a MySQL backend via API routes.
+// We have migrated from localStorage to a MongoDB backend via API routes.
 // These functions are now async wrappers around the API endpoints.
 
 export async function getStoredClients(): Promise<Client[]> {
