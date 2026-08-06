@@ -95,7 +95,7 @@ export default function ProjectsPage() {
                   {filteredProjects.map((project) => (
                     <tr key={project.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-4 px-4 font-bold text-sky-600 dark:text-sky-400">
-                        {project.id.length >= 24 ? `PRJ-${project.id.slice(-6).toUpperCase()}` : project.id}
+                        {String(project.id).length >= 24 ? `PRJ-${String(project.id).slice(-6).toUpperCase()}` : project.id}
                       </td>
                       <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white">
                         {project.projectName}

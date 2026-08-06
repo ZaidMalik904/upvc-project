@@ -151,7 +151,7 @@ export default function DashboardPage() {
                   {projects.map((project) => (
                     <tr key={project.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                        {project.id.length >= 24 ? `PRJ-${project.id.slice(-6).toUpperCase()}` : project.id}
+                        {String(project.id).length >= 24 ? `PRJ-${String(project.id).slice(-6).toUpperCase()}` : project.id}
                       </td>
                       <td className="py-3.5 px-4">
                         <p className="font-semibold text-slate-800 dark:text-slate-200">{project.client?.name || 'Unknown Client'}</p>
